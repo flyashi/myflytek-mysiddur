@@ -7,8 +7,10 @@ and its precomputed day table (window.__CONDS__), and writes:
   content/pages/<id>.json   titles, page kind, section list, day table
   content/index.json        the home-screen list
 The divine names are replaced on the way: YHVH (any vowels/cantillation, with its
-prefix letters kept) and the printed abbreviation יְיָ -> ד' ; the divine Adonai (kamatz under the nun) -> א'.
+prefix letters kept), the printed abbreviations יְיָ and ה' -> ד' ; the divine Adonai (kamatz under the nun) -> א'.
+The merged day table also gets a few Ashkenaz corrections (see fix_calendar).
 """
+import datetime as dt
 import html as htmllib
 import json
 import os
@@ -79,11 +81,28 @@ def _yy(m):
     return word
 
 
+# ה' / ה׳ as the Name ("ברוך אתה ה'", "עולה לה'"), but not the letter or the numeral 5
+# ("אות ה'", "פרק ה׳", "יום ה׳", "תהילים ה׳")
+HE = re.compile(WORD_START + PREFIX + "ה" + M + "*['׳](?![א-ת])")
+NOT_NAME_BEFORE = {"אות", "פרק", "יום", "תהילים", "מזמור", "סימן", "פסוק", "חלק", "שער", "דף", "ליל"}
+
+
+def _he(m, s):
+    before = re.findall("[א-ת]+", strip_marks(re.sub("<[^>]*>", " ", s[max(0, m.start() - 40):m.start()])))
+    if not m.group(1) and before and (before[-1] in NOT_NAME_BEFORE or before[-1][1:] in NOT_NAME_BEFORE
+                                      and before[-1][0] == "ו"):
+        return m.group(0)
+    return m.group(1) + "ד'"
+
+
 def replace_names(s, stats):
     s, n1 = YHVH.subn(lambda m: m.group(1) + "ד'", s)
     s, n3 = YY.subn(_yy, s)
     s, n2 = ADNY.subn(_adny, s)
-    stats["yhvh"] += n1 + n3
+    src = s
+    s, n4 = HE.subn(lambda m: _he(m, src), s)
+    n4 -= len(HE.findall(s))          # the ones left alone (letter / numeral) are still there
+    stats["yhvh"] += n1 + n3 + n4
     stats["adny_seen"] += n2
     return s
 
@@ -168,6 +187,115 @@ def merge_table(cal, T, pid):
                     days[i][t] = v
 
 
+# A little Hebrew calendar (Calendrical Calculations arithmetic) for the fixes below.
+HEBREW_EPOCH = -1373427            # fixed day (proleptic Gregorian ordinal) of 1 Tishri AM 1
+
+
+def heb_leap(y):
+    return (7 * y + 1) % 19 < 7
+
+
+def _heb_elapsed(y):
+    months = (235 * y - 234) // 19
+    parts = 12084 + 13753 * months
+    day = 29 * months + parts // 25920
+    return day + 1 if (3 * (day + 1)) % 7 < 3 else day
+
+
+def heb_new_year(y):
+    ny0, ny1, ny2 = _heb_elapsed(y - 1), _heb_elapsed(y), _heb_elapsed(y + 1)
+    corr = 2 if ny2 - ny1 == 356 else 1 if ny1 - ny0 == 382 else 0
+    return HEBREW_EPOCH + ny1 + corr
+
+
+def heb_months(y):
+    """[(name, length)] from Tishri; Adar is ADAR1 + ADAR2 in a leap year."""
+    n = heb_new_year(y + 1) - heb_new_year(y)
+    m = [("TISHRI", 30), ("CHESHVAN", 30 if n % 10 == 5 else 29), ("KISLEV", 29 if n % 10 == 3 else 30),
+         ("TEVET", 29), ("SHEVAT", 30)]
+    m += [("ADAR1", 30), ("ADAR2", 29)] if heb_leap(y) else [("ADAR", 29)]
+    return m + [("NISAN", 30), ("IYAR", 29), ("SIVAN", 30), ("TAMUZ", 29), ("AV", 30), ("ELUL", 29)]
+
+
+def heb_date(d):
+    """civil date -> (year, month name, day)"""
+    fixed = d.toordinal()
+    y = (fixed - HEBREW_EPOCH) // 366 + 1
+    while heb_new_year(y + 1) <= fixed:
+        y += 1
+    off = fixed - heb_new_year(y)
+    for name, length in heb_months(y):
+        if off < length:
+            return y, name, off + 1
+        off -= length
+    raise ValueError(d)
+
+
+def heb_to_civil(y, month, day):
+    fixed = heb_new_year(y)
+    for name, length in heb_months(y):
+        if name == month:
+            return dt.date.fromordinal(fixed + day - 1)
+        fixed += length
+    raise KeyError(month)
+
+
+def table_fixes(d):
+    """Ashkenaz corrections to onlinesiddur.com's table for one civil date: {token: value}.
+    Applied to whichever day/night rows carry the token, in Israel and outside."""
+    y, m, day = heb_date(d)
+    fix = {}
+    # Chanukah: the site has full Hallel on 24 Kislev and no Tachanun the day after the 8th day
+    if m == "KISLEV" and day == 24:
+        fix["hallel-full"] = False
+    if m in ("KISLEV", "TEVET") and (d - heb_to_civil(y, "KISLEV", 25)).days == 8 and d.weekday() != 5:
+        fix["tachanun-day"] = fix["lamenatzeach"] = True
+        fix["tachanun-mincha"] = d.weekday() != 4          # Friday Mincha never has it
+    # no Tachanun (morning or Mincha): Shushan Purim Katan, Pesach Sheni, Sivan 1-12 (also after
+    # Isru Chag, until the 12th), and from Yom Kippur to the end of Tishri
+    if ((m == "ADAR1" and day == 15) or (m == "IYAR" and day == 14) or (m == "SIVAN" and day <= 12)
+            or (m == "TISHRI" and 11 <= day <= 29)):
+        fix["tachanun-day"] = fix["tachanun-mincha"] = False
+    return fix
+
+
+def fix_calendar(cal):
+    """Lamenatzeach gets its own token (the site ties it to Tachanun; it keeps the site's days),
+    then the table_fixes corrections."""
+    epoch = dt.date(cal["e"][0], cal["e"][1] + 1, cal["e"][2])
+    changed = 0
+    for (loc, kind), days in cal["sets"].items():
+        for i, row in enumerate(days):
+            if kind == "day" and "tachanun-day" in row:
+                row["lamenatzeach"] = row["tachanun-day"]
+            for tok, v in table_fixes(epoch + dt.timedelta(i)).items():
+                if tok in row and row[tok] != v:
+                    row[tok] = v
+                    changed += 1
+    print("calendar fixes: %d cells changed" % changed)
+
+
+LAMENATZEACH = re.compile(r'<div data-when="tachanun-day">(\s*<h3 class="section"><span>([^<]*)</span>)')
+
+
+def lamenatzeach_fixup(art, rules):
+    """Shacharit: give the Lamenatzeach block its own condition (see fix_calendar)."""
+    n = 0
+
+    def sub(m):
+        nonlocal n
+        if strip_marks(m.group(2)) != "למנצח":
+            return m.group(0)
+        n += 1
+        return '<div data-when="lamenatzeach">' + m.group(1)
+    art = LAMENATZEACH.sub(sub, art)
+    if n != 1:
+        sys.exit("shacharit: expected one Lamenatzeach block under tachanun-day, found %d" % n)
+    rules += ("\nhtml[data-filter='on'][data-conds]:not([data-conds~='lamenatzeach']) "
+              "[data-when='lamenatzeach']{display:none;}")
+    return art, rules
+
+
 def write_calendar(cal):
     tokens = sorted({t for days in cal["sets"].values() for d in days for t in d})
     w = (len(tokens) + 5) // 6
@@ -220,6 +348,8 @@ def main():
         art = replace_names(art, stats)
         if pid == "tehilim":
             art = tehilim_fixups(art)
+        if pid == "shacharit":
+            art, rules = lamenatzeach_fixup(art, rules)
         sections = []
         for m in re.finditer(r'<h3 class="section" id="(sec-\d+)"><span>(.*?)</span>', art):
             name = htmllib.unescape(re.sub(r"<[^>]+>", "", m.group(2))).strip()
@@ -251,6 +381,7 @@ def main():
             pid, en, len(frag.encode()), len(sections),
             ("table %s+%dd" % (conds["e"], conds["d"])) if conds else "no table", stats["yhvh"]))
 
+    fix_calendar(calendar)
     write_calendar(calendar)
     fetched = ""
     try:

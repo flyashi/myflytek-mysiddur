@@ -18,6 +18,9 @@ for f in "$ANDROID_JAR" "$R8" content/index.json content/calendar.json; do
   [ -f "$f" ] || { echo "missing $f — run ./fetch-deps.sh first"; exit 1; }
 done
 
+echo "== tests: calendar table, Hebrew dates, Name replacement =="
+if command -v python3 >/dev/null; then python3 tools/test_calendar.py; else echo "(no python3: tests skipped)"; fi
+
 rm -rf build/gen build/classes build/dex build/link build/assets
 mkdir -p build/gen build/classes build/dex build/link build/assets
 
