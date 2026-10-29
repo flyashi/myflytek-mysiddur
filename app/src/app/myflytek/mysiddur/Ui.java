@@ -104,6 +104,7 @@ public final class Ui {
         lv.setOnItemClickListener((p, v, i, id) -> { d[0].dismiss(); pick.picked(i); });
         if (current > 2) lv.setSelection(current - 2);
         d[0] = new AlertDialog.Builder(a).setTitle(title).setView(lv).setNegativeButton("Close", null).create();
+        if (d[0].getWindow() != null) d[0].getWindow().setWindowAnimations(0);     // e-ink: no fade
         d[0].show();
     }
 }

@@ -80,19 +80,24 @@ public final class MainActivity extends Activity {
         Calendar.When dayW = Calendar.when(now, false), nightW = Calendar.when(now, true);
         Set<String> day = orEmpty(cal.conds(dayW, il));
         Set<String> night = orEmpty(cal.conds(nightW, il));
+        boolean afternoon = now.getHour() >= 12;
+        // before midday the night set is last night's (a night page then still means last
+        // night, e.g. dawn Selichot); "tonight" on the home screen is the coming evening
+        Set<String> tonight = afternoon ? night
+                : orEmpty(cal.conds(new Calendar.When(now.toLocalDate().plusDays(1), true), il));
 
         // the date card
         LocalDate today = now.toLocalDate();
         StringBuilder line1 = new StringBuilder(HebDate.weekday(today)).append(" · ").append(HebDate.of(today));
-        for (String l : HebDate.labels(day)) line1.append(" · ").append(l);
+        for (String l : HebDate.labels(cal.conds(dayW, il), today, il)) line1.append(" · ").append(l);
         TextView d1 = text(line1.toString(), 22, true);
         d1.setPadding(0, Ui.dp(this, 8), 0, 0);
         list.addView(d1);
         StringBuilder line2 = new StringBuilder();
-        if (now.getHour() >= 12) {
+        if (afternoon) {
             line2.append("הערב: ליל ").append(HebDate.of(nightW.date));
-            List<String> nl = HebDate.labels(night);
-            nl.removeAll(HebDate.labels(day));
+            List<String> nl = HebDate.labels(cal.conds(nightW, il), nightW.date, il);
+            nl.removeAll(HebDate.labels(cal.conds(dayW, il), today, il));
             for (String l : nl) line2.append(" · ").append(l);
             line2.append("   ");
         }
@@ -103,8 +108,8 @@ public final class MainActivity extends Activity {
         // what's for today beyond the daily prayers
         addHeader("היום");
         for (Siddur.Page p : siddur.pages) {
-            String why = special(p.id, day, night);
-            if (why != null) addRow(p, why, null);
+            String why = special(p.id, day, night, tonight, afternoon);
+            if (why != null) addRow(p, why, "torah".equals(p.id) ? siddur.anchor("torah", why) : null);
         }
         Tehilim.Portion tm = Tehilim.monthly(today);
         addRow(siddur.page("tehilim"), "חודשי: " + tm.label + "   ·   שבועי: " + Tehilim.weekly(today).label, tm.anchor);
@@ -123,15 +128,21 @@ public final class MainActivity extends Activity {
     }
 
     /** why an occasional page is for today/tonight, or null */
-    private static String special(String id, Set<String> day, Set<String> night) {
+    private static String special(String id, Set<String> day, Set<String> night, Set<String> tonight,
+                                  boolean afternoon) {
         switch (id) {
             case "musaf": return day.contains("rosh-chodesh") ? "ראש חודש" : null;
             case "musafmoed": return day.contains("chol-hamoed") ? "חול המועד" : null;
             case "hoshanot": return day.contains("sukkot") || day.contains("hoshana-rabba") ? "סוכות" : null;
-            case "nerot": return night.contains("chanukah") ? "הלילה" : null;
+            case "nerot": return tonight.contains("chanukah") ? "הלילה" : null;
             case "megillah": return day.contains("purim") || night.contains("purim") ? "פורים" : null;
             case "omer": {
-                for (String s : night) if (s.startsWith("omer-")) return "הלילה: " + HebDate.number(Integer.parseInt(s.substring(5))) + " לעומר";
+                // before midday: last night's count is today's (count without a bracha if missed)
+                for (String s : night) {
+                    if (s.startsWith("omer-")) {
+                        return (afternoon ? "הלילה: " : "היום: ") + HebDate.number(Integer.parseInt(s.substring(5))) + " לעומר";
+                    }
+                }
                 return null;
             }
             case "slichot": {
@@ -139,6 +150,7 @@ public final class MainActivity extends Activity {
                 return null;
             }
             case "tishabav": return day.contains("tisha-bav") || night.contains("tisha-bav") ? "תשעה באב" : null;
+            case "torah": return Siddur.torahToday(day);
             default: return null;
         }
     }
@@ -178,14 +190,14 @@ public final class MainActivity extends Activity {
         texts.addView(he);
         if (note != null) {
             TextView n = text(note, 16, false);
-            n.setSingleLine(true);
+            n.setMaxLines(2);                    // the Tehillim line (monthly + weekly) needs two
             n.setEllipsize(TextUtils.TruncateAt.END);
             texts.addView(n);
         }
         row.addView(texts, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         TextView en = new TextView(this);
         en.setText(p.en);
-        en.setTextColor(0xFF333333);
+        en.setTextColor(Color.BLACK);           // greys dither on e-ink
         en.setTextSize(15);
         row.addView(en);
         row.setOnClickListener(v -> startActivity(new Intent(this, ReaderActivity.class)

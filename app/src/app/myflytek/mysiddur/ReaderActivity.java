@@ -104,7 +104,12 @@ public final class ReaderActivity extends Activity {
 
     @Override protected void onPause() {
         super.onPause();
-        if (loaded) readFraction(f -> prefs.savePosition(page.id, f));
+        if (loaded) {
+            // the JS read may not come back before a finishing activity destroys the WebView,
+            // so keep the last tracked position first, then refine it
+            prefs.savePosition(page.id, lastFraction);
+            readFraction(f -> prefs.savePosition(page.id, f));
+        }
     }
 
     @Override protected void onDestroy() {
@@ -204,6 +209,17 @@ public final class ReaderActivity extends Activity {
         boolean tehilim = "tehilim".equals(page.id);
         todayBtn.setVisibility(tehilim ? View.VISIBLE : View.GONE);
         weekBtn.setVisibility(tehilim ? View.VISIBLE : View.GONE);
+        if ("torah".equals(page.id)) {
+            // today's special reading (Rosh Chodesh, Chanukah, a fast…), if any
+            Set<String> day = siddur.calendar().conds(Calendar.when(LocalDateTime.now(), false), prefs.israel());
+            final String he = day == null ? null : Siddur.torahToday(day);
+            final String anchor = siddur.anchor("torah", he);
+            if (anchor != null) {
+                todayBtn.setVisibility(View.VISIBLE);
+                todayBtn.setText("היום: " + he);
+                todayBtn.setOnClickListener(v -> jump(anchor));
+            }
+        }
         if (tehilim) {
             LocalDate today = LocalDate.now();
             final Tehilim.Portion m = Tehilim.monthly(today), w = Tehilim.weekly(today);
@@ -294,6 +310,7 @@ public final class ReaderActivity extends Activity {
         loaded = true;
         if (pendingJump != null) { jump(pendingJump); pendingJump = null; }
         else if (pendingFraction > 0) {
+            lastFraction = pendingFraction;     // until the first trackSection, leaving keeps it
             wv.evaluateJavascript("(function(f){var h=document.documentElement.scrollHeight-innerHeight;"
                     + "window.scrollTo(0,Math.round(f*h));})(" + pendingFraction + ")", null);
         }
@@ -325,7 +342,7 @@ public final class ReaderActivity extends Activity {
         else s.append(HebDate.weekday(when.date)).append(" · ");
         s.append(HebDate.of(when.date));
         Set<String> c = siddur.calendar().conds(when, prefs.israel());
-        for (String l : HebDate.labels(c)) s.append(" · ").append(l);
+        for (String l : HebDate.labels(c, when.date, prefs.israel())) s.append(" · ").append(l);
         if (page.filtered) {
             s.append(prefs.israel() ? " · א״י" : " · חו״ל");
             if (c == null) s.append(" · (no calendar for this date: showing everything)");
@@ -344,8 +361,13 @@ public final class ReaderActivity extends Activity {
     }
 
     private void resize(int delta) {
-        int s = Math.max(14, Math.min(60, prefs.size() + delta));
-        if (s == prefs.size()) return;
+        int cur = prefs.size(), s = cur;
+        for (String v : getResources().getStringArray(R.array.size_names)) {
+            int n = Integer.parseInt(v);
+            if (delta > 0 && n > cur) { s = n; break; }
+            if (delta < 0 && n < cur) s = n;
+        }
+        if (s == cur) { Ui.toast(this, "Text size " + s); return; }
         prefs.setSize(s);
         loadedLook = look();
         wv.evaluateJavascript("(function(){var el=document.elementFromPoint(innerWidth/2,4),"
@@ -356,9 +378,12 @@ public final class ReaderActivity extends Activity {
     }
 
     private void jump(String anchor) {
-        wv.evaluateJavascript("(function(){var e=document.getElementById('" + anchor + "');"
-                + "if(e){if(!e.offsetParent){document.documentElement.dataset.filter='off';}"
-                + "e.scrollIntoView(true);}})()", null);
+        wv.evaluateJavascript("(function(){var e=document.getElementById('" + anchor + "'),off=false;"
+                + "if(e){if(!e.offsetParent){document.documentElement.dataset.filter='off';off=true;}"
+                + "e.scrollIntoView(true);}return off;})()", v -> {
+            // a section for another day: the page now shows everything, so say so
+            if ("true".equals(v) && filterOn) { filterOn = false; updateStatus(); }
+        });
         ui.postDelayed(trackSection, 300);
     }
 

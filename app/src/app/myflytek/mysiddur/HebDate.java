@@ -6,8 +6,10 @@ package app.myflytek.mysiddur;
 import android.icu.util.HebrewCalendar;
 import android.icu.util.TimeZone;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -71,24 +73,52 @@ public final class HebDate {
         return i == 6 ? "שבת" : "יום " + DAYS[i];
     }
 
-    /** The day's notable tokens, in Hebrew, for the date line. */
-    public static List<String> labels(Set<String> t) {
+    /** Rosh Chodesh by the date: the 30th, or the 1st of any month but Tishri. */
+    public boolean roshChodesh() { return day == 30 || (day == 1 && month != HebrewCalendar.TISHRI); }
+
+    /**
+     * The day's notable names, in Hebrew, for the date line: from its tokens (null past the
+     * table) and from its Hebrew date (Shabbat Mevarchim, Purim Katan, Lag BaOmer…).
+     */
+    public static List<String> labels(Set<String> t, LocalDate d, boolean israel) {
         List<String> out = new ArrayList<>();
-        if (t == null) return out;
+        if (t == null) t = Collections.emptySet();
+        HebDate h = of(d);
+        int m = h.month, n = h.day;
+        boolean tishri = m == HebrewCalendar.TISHRI, adar = m == HebrewCalendar.ADAR;
         if (t.contains("rosh-hashana")) out.add("ראש השנה");
-        if (t.contains("ayt")) out.add("עשרת ימי תשובה");
+        if (tishri && n == 9) out.add("ערב יום כיפור");
+        if (tishri && n == 10) out.add("יום כיפור");
+        else if (t.contains("ayt")) out.add("עשרת ימי תשובה");
         if (t.contains("hoshana-rabba")) out.add("הושענא רבה");
         else if (t.contains("chol-hamoed-sukkot")) out.add("חול המועד סוכות");
         else if (t.contains("sukkot")) out.add("סוכות");
-        if (t.contains("shemini-atzeret")) out.add("שמיני עצרת");
+        if (tishri && n == 22) out.add(israel ? "שמיני עצרת · שמחת תורה" : "שמיני עצרת");
+        if (tishri && n == 23 && !israel) out.add("שמחת תורה");
+        if (m == HebrewCalendar.NISAN && n == 14) out.add("ערב פסח");
         if (t.contains("chol-hamoed-pesach")) out.add("חול המועד פסח");
         else if (t.contains("pesach")) out.add("פסח");
         if (t.contains("shavuot")) out.add("שבועות");
-        if (t.contains("rosh-chodesh")) out.add("ראש חודש");
+        if (h.roshChodesh()) out.add("ראש חודש " + (n == 30 ? of(d.plusDays(1)) : h).monthName());
         if (t.contains("chanukah")) out.add("חנוכה");
+        if (m == HebrewCalendar.SHEVAT && n == 15) out.add("ט״ו בשבט");
+        if (m == HebrewCalendar.ADAR_1 && n == 14) out.add("פורים קטן");
+        if (m == HebrewCalendar.ADAR_1 && n == 15) out.add("שושן פורים קטן");
         if (t.contains("purim")) out.add("פורים");
+        if (adar && n == 15) out.add("שושן פורים");
+        if (m == HebrewCalendar.IYAR && n == 14) out.add("פסח שני");
+        if (m == HebrewCalendar.IYAR && n == 18) out.add("ל״ג בעומר");
         if (t.contains("tisha-bav")) out.add("תשעה באב");
-        else if (t.contains("fast-day")) out.add("תענית ציבור");
+        else if (t.contains("fast-day")) {
+            out.add(tishri ? "צום גדליה" : m == HebrewCalendar.TEVET ? "עשרה בטבת" : adar ? "תענית אסתר"
+                    : m == HebrewCalendar.TAMUZ ? "שבעה עשר בתמוז" : "תענית ציבור");
+        }
+        if (m == HebrewCalendar.AV && n == 15) out.add("ט״ו באב");
+        if (m == HebrewCalendar.ELUL && n == 29) out.add("ערב ראש השנה");
+        // the Shabbat before Rosh Chodesh (not before Tishri): Rosh Chodesh is 1-7 days later
+        if (d.getDayOfWeek() == DayOfWeek.SATURDAY && m != HebrewCalendar.ELUL && n >= 23 && n <= 29) {
+            out.add("שבת מברכים " + of(d.plusDays(8)).monthName());
+        }
         for (String s : t) {
             if (s.startsWith("omer-")) out.add(number(Integer.parseInt(s.substring(5))) + " לעומר");
         }

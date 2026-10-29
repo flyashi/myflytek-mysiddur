@@ -9,6 +9,8 @@
         <item name="android:colorPrimaryDark">@color/eink_fg</item>
         <item name="android:textColorPrimary">@color/eink_fg</item>
         <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:alertDialogTheme">@style/EinkDialog</item>
+        <item name="android:popupMenuStyle">@style/EinkPopup</item>
     </style>
 
     <!-- Settings: system action bar with a ← -->
@@ -19,6 +21,18 @@
         <item name="android:colorPrimary">@color/eink_fg</item>
         <item name="android:colorPrimaryDark">@color/eink_fg</item>
         <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:alertDialogTheme">@style/EinkDialog</item>
+    </style>
+
+    <!-- dialogs and the ⋮ menu without fades/slides: they smear on e-ink -->
+    <style name="EinkDialog" parent="@android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:colorAccent">@color/eink_fg</item>
+    </style>
+    <style name="EinkPopup" parent="@android:style/Widget.Material.Light.PopupMenu">
+        <item name="android:popupAnimationStyle">@null</item>
+        <item name="android:popupEnterTransition">@null</item>
+        <item name="android:popupExitTransition">@null</item>
     </style>
 
     <style name="BarIcon" parent="@android:style/Widget.Material.Button.Borderless">

@@ -83,6 +83,29 @@ public final class Siddur {
         return out;
     }
 
+    /**
+     * The special Torah reading for a day (the section's name in the Torah page), or null on
+     * an ordinary day. Rosh Chodesh Tevet in Chanukah starts with the Rosh Chodesh reading.
+     */
+    public static String torahToday(java.util.Set<String> day) {
+        if (day.contains("tisha-bav")) return "תשעה באב";
+        if (day.contains("fast-day")) return "תענית ציבור";
+        boolean shabbat = day.contains("d7");
+        if (day.contains("chol-hamoed-pesach") && !shabbat) return "חול המועד פסח";
+        if (day.contains("chol-hamoed-sukkot") && !shabbat) return "חול המועד סוכות";
+        if (day.contains("rosh-chodesh")) return "ראש חודש";
+        if (day.contains("chanukah")) return "חנוכה";
+        if (day.contains("purim")) return "פורים";
+        return null;
+    }
+
+    /** The id of the section of page {@code id} named {@code he}, or null. */
+    public String anchor(String id, String he) {
+        if (he == null) return null;
+        for (Section s : sections(id)) if (s.he.equals(he)) return s.id;
+        return null;
+    }
+
     /** The page body: its day-rule CSS and the reading's HTML. */
     public String body(String id) throws IOException {
         return asset("siddur/pages/" + id + ".html");
