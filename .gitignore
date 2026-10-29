@@ -1,0 +1,18 @@
+# build deps (fetched by ./fetch-deps.sh) and outputs
+deps/
+build/
+*.apk
+*.idsig
+
+# signing material — NEVER commit
+*.pk8
+*.jks
+*.keystore
+*.x509.pem
+mfk_appkey*
+
+# misc
+__pycache__/
+*.pyc
+.DS_Store
+source/

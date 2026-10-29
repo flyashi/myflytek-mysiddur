@@ -1,0 +1,74 @@
+/* My Siddur reader — black on white for e-ink. The page sets --size, --lh and --he. */
+
+@font-face { font-family: 'Frank Ruehl CLM'; src: url('fonts/he-ruehl-400.woff2') format('woff2'); font-weight: 400; unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-200E; }
+@font-face { font-family: 'Frank Ruehl CLM'; src: url('fonts/he-ruehl-700.woff2') format('woff2'); font-weight: 500 700; unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-200E; }
+@font-face { font-family: 'Noto Serif Hebrew'; src: url('fonts/he-noto-400.woff2') format('woff2'); font-weight: 400; unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-200E; }
+@font-face { font-family: 'Noto Serif Hebrew'; src: url('fonts/he-noto-500.woff2') format('woff2'); font-weight: 500 700; unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-200E; }
+@font-face { font-family: 'Cardo'; src: url('fonts/he-cardo-400.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-200E; }
+@font-face { font-family: 'Shlomo SemiStam'; src: url('fonts/he-stam-400.woff2') format('woff2'); unicode-range: U+0590-05FF, U+FB1D-FB4F, U+200C-200E; }
+
+*, *::before, *::after { animation: none !important; transition: none !important; }
+html { scroll-behavior: auto; -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; background: #fff; color: #000; }
+body { padding: 0 24px; font-family: var(--he); -webkit-tap-highlight-color: transparent; }
+main { max-width: 900px; margin: 0 auto; }
+/* keep the line ends clear of the floating page buttons */
+html[data-pb='on'] body { padding-left: 84px; }
+/* room to scroll the last lines up to the top of the screen */
+.endpad { height: 70vh; text-align: center; padding-top: 24px; font-size: 22px; }
+
+[data-lang-en] { display: none !important; }
+
+.reading-body p, .bracha-flow > p, .bracha-tail p {
+  margin: 0 0 0.75em; font-family: var(--he);
+  font-size: var(--size); line-height: var(--lh); color: #000;
+  text-align: right;
+}
+p small, em { font-size: 0.72em; color: #222; font-style: normal; }
+b { font-weight: 700; }
+
+/* a part of the prayer (in the Sections list) … */
+h3.section[id] {
+  text-align: center; font-family: var(--he); font-weight: 700;
+  font-size: calc(var(--size) * 0.95); line-height: 1.3;
+  margin: 1.6em 0 0.7em; padding: 0.3em 0; border-top: 3px solid #000; border-bottom: 1px solid #000;
+}
+/* … and the headings inside it */
+h3.section:not([id]) {
+  text-align: center; font-family: var(--he); font-weight: 700;
+  font-size: calc(var(--size) * 0.72); line-height: 1.3; margin: 1.3em 0 0.4em;
+}
+h3.section:not([id]) span { border-bottom: 1px solid #000; padding: 0 0.6em 0.1em; }
+main > article > h3.section:first-child, main > h3.section:first-child { margin-top: 0.6em; }
+.sub-heading { text-align: center !important; }
+html[data-headings='off'] h3.section { height: 0; margin: 0 0 0.6em; padding: 0; border: 0; overflow: hidden; }
+html[data-headings='off'] .sub-heading { display: none; }
+
+.orn { text-align: center; margin: 1em 0; letter-spacing: 0.4em; }
+
+.tehilim-day {
+  margin: 2em 0 0.4em; padding: 0.35em 0.6em; background: #000; color: #fff;
+  font-family: sans-serif; font-weight: 700; font-size: calc(var(--size) * 0.6);
+  text-align: center; border-radius: 4px;
+}
+.translit {
+  direction: ltr; text-align: left !important; font-family: serif; font-style: italic;
+  font-size: calc(var(--size) * 0.62) !important; line-height: 1.45 !important;
+  margin-top: -0.4em !important; color: #222 !important;
+}
+
+/* Bracha Achrona: shared text full width, the three variants side by side */
+.bracha-flow { margin: 0 auto 1.6em; }
+.bracha-fork { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0.2em 0 1em; border-top: 1px solid #000; border-bottom: 1px solid #000; }
+.bracha-cell { padding: 0.4em 0.6em; }
+.bracha-cell + .bracha-cell { border-inline-start: 1px solid #000; }
+.bracha-cell p { margin: 0 0 0.4em; font-size: calc(var(--size) * 0.9); line-height: var(--lh); text-align: center; }
+.bracha-cell p.cell-label { font-family: sans-serif; font-size: 14px; line-height: 1.3; font-weight: 700; }
+.bracha-tail h3 { text-align: center; font-weight: 700; font-size: calc(var(--size) * 0.8); margin: 1.4em 0 0.6em; padding-top: 0.5em; border-top: 2px solid #000; }
+@media (max-width: 560px) {
+  .bracha-fork { grid-template-columns: 1fr; }
+  .bracha-cell + .bracha-cell { border-inline-start: none; border-top: 1px solid #000; }
+}
+
+/* a jump lands a little below the top edge */
+[id^="sec-"], [id^="day-"] { scroll-margin-top: 8px; }

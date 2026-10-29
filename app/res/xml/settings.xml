@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="Calendar">
+        <ListPreference android:key="location" android:title="Location"
+            android:defaultValue="diaspora" android:summary="%s"
+            android:entries="@array/location_names" android:entryValues="@array/location_ids"/>
+        <SwitchPreference android:key="filter" android:title="Show only what is said today"
+            android:summary="Hides additions for other days (Ya'ale Veyavo, Hallel, Tachanun, Al HaNisim…). Each prayer has a “Show all” switch too."
+            android:defaultValue="true"/>
+        <SwitchPreference android:key="rubrics" android:title="Keep instructions when filtering"
+            android:summary="Show the small notes (“On Rosh Chodesh say:”) even for parts that are shown"
+            android:defaultValue="false"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Text">
+        <ListPreference android:key="size" android:title="Text size"
+            android:defaultValue="24" android:summary="%s"
+            android:entries="@array/size_names" android:entryValues="@array/size_names"/>
+        <ListPreference android:key="lh" android:title="Line spacing"
+            android:defaultValue="1.8" android:summary="%s"
+            android:entries="@array/lh_names" android:entryValues="@array/lh_ids"/>
+        <ListPreference android:key="font" android:title="Font"
+            android:defaultValue="ruehl" android:summary="%s"
+            android:entries="@array/font_names" android:entryValues="@array/font_ids"/>
+        <ListPreference android:key="nikud" android:title="Nikud"
+            android:defaultValue="all" android:summary="%s"
+            android:entries="@array/nikud_names" android:entryValues="@array/nikud_ids"/>
+        <SwitchPreference android:key="headings" android:title="Section headings"
+            android:defaultValue="true"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Screen">
+        <SwitchPreference android:key="page_buttons" android:title="Page ▲▼ buttons"
+            android:summary="Floating buttons that scroll one screen at a time"
+            android:defaultValue="true"/>
+        <SwitchPreference android:key="awake" android:title="Keep the screen on while reading"
+            android:defaultValue="true"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="About">
+        <Preference android:key="about" android:title="My Siddur" android:selectable="false"/>
+    </PreferenceCategory>
+</PreferenceScreen>

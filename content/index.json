@@ -1,0 +1,189 @@
+{
+ "fetched": "2026-10-29",
+ "pages": [
+  {
+   "id": "shacharit",
+   "he": "שחרית",
+   "en": "Shacharit",
+   "group": "daily",
+   "daykind": "day",
+   "filtered": true
+  },
+  {
+   "id": "mincha",
+   "he": "מנחה",
+   "en": "Mincha",
+   "group": "daily",
+   "daykind": "day",
+   "filtered": true
+  },
+  {
+   "id": "maariv",
+   "he": "ערבית",
+   "en": "Maariv",
+   "group": "daily",
+   "daykind": "night",
+   "filtered": true
+  },
+  {
+   "id": "brachot",
+   "he": "ברכות",
+   "en": "Blessings",
+   "group": "daily",
+   "daykind": "meal",
+   "filtered": false
+  },
+  {
+   "id": "birkat",
+   "he": "ברכת המזון",
+   "en": "Birkat HaMazon",
+   "group": "daily",
+   "daykind": "meal",
+   "filtered": true
+  },
+  {
+   "id": "bracha",
+   "he": "ברכה מעין שלוש",
+   "en": "Bracha Achrona",
+   "group": "daily",
+   "daykind": "meal",
+   "filtered": true
+  },
+  {
+   "id": "ksham",
+   "he": "קריאת שמע על המיטה",
+   "en": "Kriat Shema al HaMita",
+   "group": "daily",
+   "daykind": "night",
+   "filtered": false
+  },
+  {
+   "id": "kadish",
+   "he": "קדיש",
+   "en": "Kaddish",
+   "group": "daily",
+   "daykind": "meal",
+   "filtered": true
+  },
+  {
+   "id": "derech",
+   "he": "תפילת הדרך",
+   "en": "Tefilat HaDerech",
+   "group": "daily",
+   "daykind": "day",
+   "filtered": true
+  },
+  {
+   "id": "tehilim",
+   "he": "תהילים",
+   "en": "Tehillim",
+   "group": "tehilim",
+   "daykind": "meal",
+   "filtered": false
+  },
+  {
+   "id": "musaf",
+   "he": "מוסף לראש חודש",
+   "en": "Musaf Rosh Chodesh",
+   "group": "times",
+   "daykind": "day",
+   "filtered": true
+  },
+  {
+   "id": "musafmoed",
+   "he": "מוסף לחול המועד",
+   "en": "Musaf Chol HaMoed",
+   "group": "times",
+   "daykind": "day",
+   "filtered": true
+  },
+  {
+   "id": "hoshanot",
+   "he": "הושענות",
+   "en": "Hoshanot",
+   "group": "times",
+   "daykind": "day",
+   "filtered": true
+  },
+  {
+   "id": "nerot",
+   "he": "הדלקת נרות חנוכה",
+   "en": "Chanukah Candles",
+   "group": "times",
+   "daykind": "night",
+   "filtered": true
+  },
+  {
+   "id": "megillah",
+   "he": "מגילת אסתר",
+   "en": "Megillat Esther",
+   "group": "times",
+   "daykind": "meal",
+   "filtered": false
+  },
+  {
+   "id": "omer",
+   "he": "ספירת העומר",
+   "en": "Sefirat HaOmer",
+   "group": "times",
+   "daykind": "night",
+   "filtered": true
+  },
+  {
+   "id": "levana",
+   "he": "ברכת הלבנה",
+   "en": "Birkat HaLevana",
+   "group": "times",
+   "daykind": "night",
+   "filtered": true
+  },
+  {
+   "id": "slichot",
+   "he": "סליחות",
+   "en": "Selichot",
+   "group": "times",
+   "daykind": "night",
+   "filtered": true
+  },
+  {
+   "id": "tishabav",
+   "he": "תשעה באב",
+   "en": "Tisha B'Av",
+   "group": "times",
+   "daykind": "meal",
+   "filtered": false
+  },
+  {
+   "id": "torah",
+   "he": "קריאת התורה",
+   "en": "Torah Readings",
+   "group": "times",
+   "daykind": "day",
+   "filtered": false
+  },
+  {
+   "id": "milah",
+   "he": "ברית מילה",
+   "en": "Brit Milah",
+   "group": "other",
+   "daykind": "day",
+   "filtered": false
+  },
+  {
+   "id": "klali",
+   "he": "תיקון הכללי",
+   "en": "Tikkun HaKlali",
+   "group": "other",
+   "daykind": "day",
+   "filtered": false
+  },
+  {
+   "id": "chatzot",
+   "he": "תיקון חצות",
+   "en": "Tikkun Chatzot",
+   "group": "other",
+   "daykind": "night",
+   "filtered": true
+  }
+ ]
+}

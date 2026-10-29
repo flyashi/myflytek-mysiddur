@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="location_names"><item>Outside Israel (חוץ לארץ)</item><item>Israel (ארץ ישראל)</item></string-array>
+    <string-array name="location_ids"><item>diaspora</item><item>israel</item></string-array>
+    <string-array name="font_names">
+        <item>Frank Ruehl</item><item>Noto Serif Hebrew</item><item>Cardo</item>
+        <item>Shlomo SemiStam</item><item>System font</item>
+    </string-array>
+    <string-array name="font_ids"><item>ruehl</item><item>noto</item><item>cardo</item><item>stam</item><item>system</item></string-array>
+    <string-array name="nikud_names">
+        <item>Vowels and cantillation</item><item>Vowels only</item><item>No vowels</item>
+    </string-array>
+    <string-array name="nikud_ids"><item>all</item><item>vowels</item><item>none</item></string-array>
+    <string-array name="size_names">
+        <item>18</item><item>20</item><item>22</item><item>24</item><item>26</item><item>28</item>
+        <item>30</item><item>32</item><item>36</item><item>40</item><item>44</item><item>48</item>
+    </string-array>
+    <string-array name="lh_names"><item>Tight (1.5)</item><item>Normal (1.8)</item><item>Loose (2.1)</item><item>Very loose (2.4)</item></string-array>
+    <string-array name="lh_ids"><item>1.5</item><item>1.8</item><item>2.1</item><item>2.4</item></string-array>
+</resources>
