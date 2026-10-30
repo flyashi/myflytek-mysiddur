@@ -50,11 +50,11 @@ PAGES = [
 
 # ---------------------------------------------------------------- divine names
 
-# vowels, cantillation, dagesh, shin/sin dots, meteg, ZWJ/ZWNJ/CGJ — everything that
+# vowels, cantillation, dagesh, shin/sin dots, meteg, ZWJ/ZWNJ/LRM/RLM/CGJ — everything that
 # can sit on a letter. NOT maqaf (05BE), paseq (05C0), sof pasuq (05C3), nun hafukha (05C6).
-M = "[֑-ׇֽֿׁׂׅׄ‌‍͏]"
+M = "[֑-ׇֽֿׁׂׅׄ‌‎‏‍͏]"
 LET = "[א-ת]"
-WORD_START = "(?<![א-ת֑-ׇֽֿׁׂׅׄ‌‍͏])"
+WORD_START = "(?<![א-ת֑-ׇֽֿׁׂׅׄ‌‎‏‍͏])"
 PREFIX = "((?:[ובכלמשהד]" + M + "*){0,3})"
 END = "(?!" + LET + "|" + M + ")"
 YHVH = re.compile(WORD_START + PREFIX + "י" + M + "*ה" + M + "*ו" + M + "*ה" + M + "*" + END)
@@ -95,7 +95,141 @@ def _he(m, s):
     return m.group(1) + "ד'"
 
 
+# ---- the other Names: אֱלֹהִים → אֱלֹקִים, אֵל → קֵל, יָהּ → קָהּ, שַׁ-דַּי, צְבָ-אוֹת
+# Profane uses (other gods, judges, "these", Beit-El…) are left as they are; see _profane.
+
+HOLAM = "ֹֺ"
+MAPPIQ = "ּ"
+VOWEL = "[ְ-ׇֻ]"
+ELOHIM = re.compile(WORD_START + PREFIX + "א(" + M + "*)ל(" + M + "*)(ו" + M + "*)?ה(" + M + "*)((?:[ינוךכםהן]" + M + "*)*)" + END)
+ELOHIM_SUFFIX = {"", "י", "ים", "ינו", "יך", "יכם", "יכן", "יו", "יה", "יהם", "יהן"}
+ELAHA = re.compile(WORD_START + PREFIX + "א(" + M + "*)ל(" + M + "*)ה(" + M + "*)א(" + M + "*)" + END)   # Aramaic אֱלָהָא
+EL = re.compile(WORD_START + PREFIX + "א(" + M + "*)ל(" + M + "*)" + END)
+YAH = re.compile(WORD_START + PREFIX + "י(" + M + "*)ה(" + M + "*)" + END)
+SHADDAI = re.compile(WORD_START + PREFIX + "ש(" + M + "*)ד(" + M + "*)י(" + M + "*)" + END)
+TZVAOT = re.compile(WORD_START + PREFIX + "צ(" + M + "*)ב(" + M + "*)(א" + M + "*ו" + M + "*ת" + M + "*)" + END)
+
+
+def vowels(marks):
+    return set(re.findall(VOWEL, marks))
+
+
+def real_prefix(p):
+    """ו only first, ש only first or after ו; a prefix letter never carries a holam,
+    hiriq or qubuts (so שׁוֹאֵל, הוֹאֵל, שְׁמוּאֵל, שִׁבְיָהּ are not a prefix + a Name)."""
+    letters = re.sub(M, "", p)
+    if "ו" in letters[1:] or "ש" in letters.lstrip("ו")[1:] or re.search("[" + HOLAM + "\u05B4\u05BB]", p):
+        return False                                     # no holam / hiriq / qubuts on a prefix
+    return not re.search("ש" + M + "*\u05B0", p)         # שֶׁ, never שְׁ (שִׁבְיָהּ, שְׁמוּאֵל)
+
+
+def context(s, start, end):
+    """The bare words just before and just after s[start:end] (tags, marks, maqaf dropped)."""
+    def words(t):
+        t = re.sub(r"<[^>]*>", " ", t).replace("־", " ")
+        return re.findall("[א-ת]+", strip_marks(t))
+    return words(s[max(0, start - 120):start]), words(s[end:end + 120])
+
+
+# other gods, judges and "gods" (Ps 82, 86:8, 95-97, 135:5, 136:2, 138:1, Dt 10:17)
+GOD_PROFANE_NEXT = {"אחרים", "אחר", "חדשים", "מסכה", "אתם"}
+GOD_PROFANE_PREV = {"כל", "מכל", "וכל", "בכל", "אחרי", "פסילי", "ופסילי", "נגד", "בקרב", "כמוך", "איןכמוך"}
+EL_PROFANE_NEXT = {"זר", "נכר", "אחר", "הנקבר"}
+EL_PROFANE_PREV = {"הארצת", "הארצות", "הגוים", "בית", "לבית", "בבית", "ובית"}   # הָאֵל "these"; Beit-El
+NAME_BEFORE_TZVAOT = {"ד", "לד", "וד", "בד", "א", "אלהי", "אלהים", "אלקי", "אלקים", "ואלהי", "ואלקי"}
+
+
+def _profane(kind, word, prev, nxt):
+    p = prev[-1] if prev else ""
+    n = nxt[0] if nxt else ""
+    if kind == "god":
+        if n in GOD_PROFANE_NEXT or p in GOD_PROFANE_PREV:
+            return True
+        if word == "ובאלהיהם" or (word == "לאלהיהם" and p == "וזבחו"):   # Nu 33:4, Ex 34:15
+            return True
+        if word in ("האלהים", "האלקים") and p in ("אלהי", "לאלהי", "אלקי", "לאלקי"):   # God of gods
+            return True
+        if nxt[:2] == ["אשר", "לא"] and nxt[2:3] and nxt[2].startswith("ידע"):   # gods "they did not know"
+            return True
+    if kind == "el":
+        if n in EL_PROFANE_NEXT or p in EL_PROFANE_PREV or (word == "לאל" and n.startswith("יד")):   # לְאֵל יָדִי = power
+            return True
+    return False
+
+
+def _elohim(m, s, stats):
+    pre, aleph, lamed, vav, he, suf = m.groups()
+    word = m.group(0)
+    bare = strip_marks(word)
+    unvocalized = not re.search(VOWEL, word)
+    ok = (real_prefix(pre)
+          and strip_marks(suf) in ELOHIM_SUFFIX
+          and vowels(aleph) <= {"ֱ", "ֶ"} and (vowels(aleph) or pre or unvocalized)
+          and vowels(lamed) <= set(HOLAM) and MAPPIQ not in lamed
+          and (not vav or re.search("[" + HOLAM + "]", vav) or unvocalized)
+          and (strip_marks(suf) or MAPPIQ in he))       # bare אלה only as אֱלוֹהַּ / אֱלֹהַּ, never אֵלֶּה
+    if not ok:
+        return word
+    if _profane("god", bare, *context(s, m.start(), m.end())):
+        stats["kept"].append(word)
+        return word
+    stats["elohim"] += 1
+    return pre + "א" + aleph + "ל" + lamed + (vav or "") + "ק" + he + suf
+
+
+def _elaha(m, s, stats):
+    pre, aleph, lamed, he, a = m.groups()
+    if not real_prefix(pre) or "ָ" not in lamed or "ָ" not in he:
+        return m.group(0)
+    stats["elohim"] += 1
+    return pre + "א" + aleph + "ל" + lamed + "ק" + he + "א" + a
+
+
+def _el(m, s, stats):
+    pre, aleph, lamed = m.groups()
+    if not real_prefix(pre) or "ֵ" not in aleph or vowels(lamed):
+        return m.group(0)
+    if _profane("el", strip_marks(m.group(0)), *context(s, m.start(), m.end())):
+        stats["kept"].append(m.group(0))
+        return m.group(0)
+    stats["el"] += 1
+    return pre + "ק" + aleph + "ל" + lamed
+
+
+def _yah(m, s, stats):
+    pre, yud, he = m.groups()
+    if (not real_prefix(pre) or "ָ" not in yud or MAPPIQ not in he
+            or pre and not vowels(re.split("[א-ת]", pre)[-1]) <= {"ְ"}):   # בְּיָהּ, not שְׁבִיָּה
+        return m.group(0)
+    prev, _ = context(s, m.start(), m.end())
+    if prev and prev[-1] == "הללו":                     # הַלְלוּ־יָהּ stays, like הַלְלוּיָהּ
+        return m.group(0)
+    stats["yah"] += 1
+    return pre + "ק" + yud + "ה" + he
+
+
+def _shaddai(m, s, stats):
+    pre, shin, dalet, yud = m.groups()
+    if (not real_prefix(pre) or "ׁ" not in shin or not vowels(shin) & {"ַ", "ָ"}
+            or MAPPIQ not in dalet or not vowels(dalet) & {"ַ", "ָ"}):
+        return m.group(0)                                # שָׂדַי "field", שְׁדֵי, לְשַׁדִּי
+    stats["shaddai"] += 1
+    return pre + "ש" + shin + "-ד" + dalet + "י" + yud
+
+
+def _tzvaot(m, s, stats):
+    pre, tz, bet, rest = m.groups()
+    prev, _ = context(s, m.start(), m.end())
+    if pre or "ְ" not in tz or not prev or prev[-1] not in NAME_BEFORE_TZVAOT:
+        return m.group(0)                                # הַצְּבָאוֹת, הֲמוֹן צְבָאוֹת, מַלְכֵי צְבָאוֹת
+    stats["tzvaot"] += 1
+    return "צ" + tz + "ב" + bet + "-" + rest
+
+
 def replace_names(s, stats):
+    for k in ("elohim", "el", "yah", "shaddai", "tzvaot"):
+        stats.setdefault(k, 0)
+    stats.setdefault("kept", [])
     s, n1 = YHVH.subn(lambda m: m.group(1) + "ד'", s)
     s, n3 = YY.subn(_yy, s)
     s, n2 = ADNY.subn(_adny, s)
@@ -104,6 +238,9 @@ def replace_names(s, stats):
     n4 -= len(HE.findall(s))          # the ones left alone (letter / numeral) are still there
     stats["yhvh"] += n1 + n3 + n4
     stats["adny_seen"] += n2
+    for pat, fn in ((ELOHIM, _elohim), (ELAHA, _elaha), (EL, _el), (YAH, _yah), (SHADDAI, _shaddai), (TZVAOT, _tzvaot)):
+        src = s
+        s = pat.sub(lambda m: fn(m, src, stats), s)
     return s
 
 
@@ -375,8 +512,8 @@ def main():
             json.dump(meta, f, ensure_ascii=False, separators=(",", ":"))
         index.append({"id": pid, "he": he, "en": en, "group": group, "daykind": daykind,
                       "filtered": bool(conds)})
-        total["yhvh"] += stats["yhvh"]
-        total["adny_seen"] += stats["adny_seen"]
+        for k, v in stats.items():
+            total[k] = total.get(k, type(v)()) + v
         print("%-10s %-22s %7d bytes  %3d sections  %s  YHVH x%d" % (
             pid, en, len(frag.encode()), len(sections),
             ("table %s+%dd" % (conds["e"], conds["d"])) if conds else "no table", stats["yhvh"]))
@@ -391,6 +528,8 @@ def main():
     with open(os.path.join(OUT, "index.json"), "w", encoding="utf-8") as f:
         json.dump({"fetched": fetched, "pages": index}, f, ensure_ascii=False, indent=1)
     print("YHVH replaced: %d; Adonai-shaped words seen: %d" % (total["yhvh"], total["adny_seen"]))
+    print("Elohim -> ק: %d; El: %d; Yah: %d; Shaddai: %d; Tzvaot: %d; profane uses kept: %d" % (
+        total["elohim"], total["el"], total["yah"], total["shaddai"], total["tzvaot"], len(total["kept"])))
     if leftovers:
         print("LEFTOVER names:", leftovers)
         sys.exit(1)

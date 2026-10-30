@@ -26,7 +26,13 @@ network.
   Chanukah. Lamenatzeach keeps the site's own days.
 * **The Name** — YHVH (any vowels or cantillation, prefixes kept: לַד׳, אֶת־ד׳) and
   the printed יְיָ / ה' are written **ד'** (not "אות ה'", "פרק ה׳", "יום ה׳"); the divine אֲדֹנָי (kamatz under the nun) is
-  written **א'**. אֲדֹנִי "my master" and אֲדֹנֵינוּ are left alone.
+  written **א'**. אֲדֹנִי "my master" and אֲדֹנֵינוּ are left alone. The other Names get a ק or a
+  hyphen, vowels and prefixes kept: אֱלֹהִים → **אֱלֹקִים** (every form: אֱלֹקֵינוּ, וֵאלֹקֵי, אֱלוֹקַּ,
+  Aramaic אֱלָקָא), אֵל → **קֵל** (tzere only; not אַל / אֶל / שׁוֹאֵל), יָהּ → **קָהּ** (הַלְלוּיָהּ
+  stays), שַׁדַּי → **שַׁ-דַּי**, and צְבָאוֹת → **צְבָ-אוֹת** after a Name. Profane uses keep their
+  letters: other gods (אֱלֹהִים אֲחֵרִים, כָּל־אֱלֹהֵי הָעַמִּים, עַל־כָּל־אֱלֹהִים, אֵל זָר / נֵכָר),
+  judges (Ps 82, 138:1), "God of gods" (the second word), Beit-El, הָאֵל "these" and
+  הֲמוֹן / מַלְכֵי צְבָאוֹת.
 * **Torah readings** — on Rosh Chodesh, Chanukah, Purim, fasts and Chol HaMoed a
   *היום* button jumps to the day's reading (weekly parshiyot: pick from the sections).
 * **Reading** — sections list (only today's), current section in the title, A−/A+,
@@ -50,7 +56,7 @@ The texts are committed in `content/`, so a build needs no network. To refresh t
 
 ```
 tools/fetch-source.sh    # onlinesiddur.com pages -> source/ (gitignored)
-tools/import.py          # source/ -> content/  (fails if any Name is left unconverted)
+tools/import.py          # source/ -> content/  (fails if any YHVH / Adonai is left unconverted; prints the profane uses it kept)
 ```
 
 `import.py` keeps each page's reading body and its day-rule CSS, replaces the Names,
